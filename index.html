@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Analyzer</title>
+</head>
+<body>
+    <input type="file" accept="image/*" onchange="uploadImage(event)">
+    <p id="imageDescription">Здесь будет описание...</p>
+
+    <script>
+      function uploadImage(event) {
+        const reader = new FileReader();
+        reader.onload = function() {
+          const imageUrl = reader.result;
+          analyzeImage(imageUrl);
+        };
+        reader.readAsDataURL(event.target.files[0]);
+      }
+
+      function analyzeImage(imageBase64) {
+        const apiKey = 'f0a0fbf1fe0647a295364beb99d5231f'; // Ваш Clarifai API ключ
+        const modelId = 'aaa03c23b3724a16a56b629203edc62c'; // Идентификатор модели для анализа
+
+        fetch("https://api.clarifai.com/v2/models/" + modelId + "/outputs", {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Key ' + apiKey,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "inputs": [
+                    {
+                        "data": {
+                            "image": {
+                                "base64": imageBase64.split(',')[1]
+                            }
+                        }
+                    }
+                ]
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const concepts = data.outputs[0].data.concepts;
+            const descriptionText = concepts.map(concept => `${concept.name}: ${concept.value.toFixed(2)}`).join(", ");
+            document.getElementById('imageDescription').textContent = 'Описание: ' + descriptionText;
+        })
+        .catch(error => console.error('Ошибка:', error));
+      }
+    </script>
+</body>
+</html>
